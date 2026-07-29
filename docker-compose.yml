@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: bookmanager-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: bookmanager
+      MYSQL_USER: bookmanager
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - bookmanager_db_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  bookmanager_db_data:
