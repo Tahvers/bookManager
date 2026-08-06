@@ -30,11 +30,11 @@ public class BookService {
 
 
     public List<BookResponse> getAllBooks(){
-        return bookRepository.findAll().stream().map(bookMapper::toDto).collect(Collectors.toList());
+        return bookRepository.findAllWithAuthorsAndCategories().stream().map(bookMapper::toDto).collect(Collectors.toList());
     }
 
     public BookResponse getBookById(Long id){
-        Book book = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + id));
+        Book book = bookRepository.findByIdWithAuthorsAndCategories(id).orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + id));
         return bookMapper.toDto(book);
     }
 
