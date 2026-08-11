@@ -30,7 +30,7 @@ public class LibraryService {
 
     public LibraryBookResponse addBookToLibrary(Long userId , AddBookToLibraryRequest request){
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        Book book = bookRepository.findById(request.getBookId()).orElseThrow(() -> new ResourceNotFoundException(("Book not found with id: " + request.getBookId())));
+        Book book = bookRepository.findByIdWithAuthorsAndCategories(request.getBookId()).orElseThrow(() -> new ResourceNotFoundException(("Book not found with id: " + request.getBookId())));
 
         if (userBookRepository.existsByUserIdAndBookId(userId, request.getBookId())){
             throw new ResourceAlreadyExistException("Book already exists in user library");
@@ -71,7 +71,7 @@ public class LibraryService {
     public List<LibraryBookResponse> getUserBooks(Long id){
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
-        List<LibraryBookResponse> list = userBookRepository.findByUserId(id).stream().map(libraryMapper::toDto).collect(Collectors.toList());
+        List<LibraryBookResponse> list = userBookRepository.findByUserIdWithBookAndAuthors(id).stream().map(libraryMapper::toDto).collect(Collectors.toList());
 
         return list;
     }
