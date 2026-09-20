@@ -9,11 +9,13 @@ import com.example.bookmanager.entity.UserBook;
 import com.example.bookmanager.entity.enums.ReadingStatus;
 import com.example.bookmanager.exception.ResourceAlreadyExistException;
 import com.example.bookmanager.exception.ResourceNotFoundException;
+import com.example.bookmanager.exception.UnauthorizedAccessException;
 import com.example.bookmanager.mapper.LibraryMapper;
 import com.example.bookmanager.repository.BookRepository;
 import com.example.bookmanager.repository.UserBookRepository;
 import com.example.bookmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,6 +31,7 @@ public class LibraryService {
     private final LibraryMapper libraryMapper;
 
     public LibraryBookResponse addBookToLibrary(Long userId , AddBookToLibraryRequest request){
+        checkOwnership(userId);
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Book book = bookRepository.findByIdWithAuthorsAndCategories(request.getBookId()).orElseThrow(() -> new ResourceNotFoundException(("Book not found with id: " + request.getBookId())));
 
@@ -54,6 +57,7 @@ public class LibraryService {
     }
 
     public LibraryBookResponse updateLibraryEntry(Long userId, Long bookId, UpdateLibraryEntryRequest updateLibraryEntryRequest){
+        checkOwnership(userId);
         UserBook userBook = userBookRepository.findByUserIdAndBookId(userId, bookId).orElseThrow(() -> new ResourceNotFoundException("Library entry not found"));
 
         if (updateLibraryEntryRequest.getRating() != null){
@@ -69,6 +73,7 @@ public class LibraryService {
     }
 
     public List<LibraryBookResponse> getUserBooks(Long id){
+        checkOwnership(id);
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         List<LibraryBookResponse> list = userBookRepository.findByUserIdWithBookAndAuthors(id).stream().map(libraryMapper::toDto).collect(Collectors.toList());
@@ -77,8 +82,18 @@ public class LibraryService {
     }
 
     public void deleteBookFromLibrary(Long userId, Long bookId){
+        checkOwnership(userId);
         UserBook userBook = userBookRepository.findByUserIdAndBookId(userId, bookId).orElseThrow(() -> new ResourceNotFoundException("Library entry not found"));
 
         userBookRepository.delete(userBook);
+    }
+
+    private void checkOwnership(Long userId){
+        String authenticatedUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        User authenticatedUser = userRepository.findByUsername(authenticatedUsername).orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found: " + authenticatedUsername));
+
+        if (!authenticatedUser.getId().equals(userId)){
+            throw new UnauthorizedAccessException("You are not allowed to access this resource");
+        }
     }
 }
